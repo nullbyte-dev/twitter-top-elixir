@@ -24,7 +24,7 @@ defmodule TwitterTop do
     {"q", ""}
   ]
 
-  def start(account) do
+  def start(account \\ "norimyxxxo") do
     IO.puts "Starting for account: #{account}"
     get_tweets(account)
     IO.puts "Stopping for account: #{account}"
