@@ -1,10 +1,15 @@
 defmodule TwitterTop.Store do
-  def receive_tweets([head | tail]) do
-    IO.puts "Got tweet: " <> inspect head
-    receive_tweets(tail)
-  end
+  require Logger
 
-  def receive_tweets([]) do
-    IO.puts "Finished"
+  # def receive_tweets([head | tail]) do
+  #   Logger.info "Got tweet: " <> inspect head
+  #   receive_tweets(tail)
+  # end
+
+  # def receive_tweets([]) do
+  # end
+
+  def receive_tweet(tweet) do
+    Logger.info "Got tweet: " <> inspect tweet
   end
 end
