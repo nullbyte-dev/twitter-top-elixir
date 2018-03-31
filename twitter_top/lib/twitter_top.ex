@@ -18,57 +18,55 @@ defmodule TwitterTop do
 
   @service_url "https://twitter.com/"
   @search_endpoint @service_url <> "search"
-  @search_params [
-    {:l, ""},
-    {:src, "typd"},
-    {:q, ""}
-  ]
 
   def start(account \\ "norimyxxxo") do
     Logger.info "Starting for account: #{account}"
 
-    account
-    |> hold_account
-    |> stream_tweets
-    |> aggregate_words
-    |> store_results
+    Task.async(__MODULE__, :workflow, [account])
+    |> (fn {:ok, task} -> Task.await(task) end).()
 
     Logger.info "Stopping for account: #{account}"
   end
 
-  defp hold_account(account) do
-    case Requester.get(@service_url <> account) do
-      {:ok, html} ->
-        html
-        |> Parser.extract_account
-        |> (fn x -> Agent.start_link(fn -> x end) end).()
-    end
+  def workflow(account) do
+    # TODO: one request worker, many processing workers
+    account
+    |> hold_account
+    |> generate_urls
+    |> Enum.each(fn url ->
+        Task.start(fn ->
+          url
+          |> IO.inspect
+          |> get_tweets_from_url
+          |> aggregate_words
+          |> store_results
+        end)
+      end)
   end
 
-  defp stream_tweets({:ok, agent}) do
-    with name <- Agent.get(agent, fn x -> x.name end),
-         created_at <- Agent.get(agent, fn x -> x.created_at end) do
+  defp hold_account(account) do
+    @service_url <> account |> Requester.get! |> Parser.extract_account
+  end
 
-      for d <- DatesRange.generate_dates(created_at) do
-        IO.puts inspect d
-        case Requester.get(@search_endpoint <> "?l=&src=typd&q=from:#{name}%20since:#{d.since}%20until:#{d.until}") do
-          {:ok, html} ->
-            Parser.extract_tweets(html)
-            |> IO.puts(&inspect(&1))
-          {:retry, reason} -> IO.puts inspect reason
-          {:abort, reason} -> IO.puts inspect reason
-        end
+  defp generate_urls(profile) do
+    profile.created_at
+    |> DatesRange.generate_dates
+    |> Stream.map(fn d ->
+         @search_endpoint <> "?l=&src=typd&q=" <>
+                             "from:#{profile.name}%20" <>
+                             "since:#{d.since}%20 until:#{d.until}"
+       end)
+  end
 
-      end
-    end
+  def get_tweets_from_url(search_url) do
+    search_url |> Requester.get! |> Parser.extract_tweets
   end
 
   defp aggregate_words(stream) do
-    Stream.map(stream, &Aggregate.count_words/1)
+    stream |> Stream.map(&Aggregate.count_words/1)
   end
 
   defp store_results(stream) do
-    Enum.map(stream, &Store.receive_tweet/1)
+    stream |> Stream.map(&Store.receive_tweet/1)
   end
-
 end

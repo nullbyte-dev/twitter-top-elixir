@@ -4,5 +4,7 @@
 			"path": "."
 		}
 	],
-	"settings": {}
+	"settings": {
+		"elixir.projectPath": "twitter_top/"
+	}
 }

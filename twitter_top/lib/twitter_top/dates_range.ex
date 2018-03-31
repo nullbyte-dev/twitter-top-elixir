@@ -6,8 +6,11 @@ defmodule TwitterTop.DatesRange do
     |> Timex.Interval.with_step([days: @dateshift])
     |> Stream.chunk_every(2)
     |> Stream.map(fn [since, until] ->
-         %{since: Timex.format!(since, "%Y-%m-%d", :strftime),
-           until: Timex.format!(until, "%Y-%m-%d", :strftime)}
+         %{since: since |> format_range, until: until |> format_range}
        end)
+  end
+
+  defp format_range(date) do
+    Timex.format!(date, "%Y-%m-%d", :strftime)
   end
 end
