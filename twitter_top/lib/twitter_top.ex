@@ -30,6 +30,7 @@ defmodule TwitterTop do
   def workflow(account) do
     # TODO: one request worker, many processing workers
     # OR:
+    # Scrap proxies
     # Agent for holding links [random get url]
     # Agent for holding tweets ID
     # Agent for holding ALL tweets and dump on every xxx tweets (holder)
