@@ -3,5 +3,5 @@ defmodule TwitterTop.Entities.Tweet do
 end
 
 defmodule TwitterTop.Entities.Account do
-  defstruct name: nil, created_at: nil
+  defstruct screen_name: nil, created_at: nil, statuses_count: 0
 end

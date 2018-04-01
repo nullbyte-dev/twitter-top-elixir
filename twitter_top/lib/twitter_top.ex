@@ -12,40 +12,43 @@ defmodule TwitterTop do
       :world
 
   """
+  @service_url "https://twitter.com/"
+  @search_endpoint @service_url <> "search"
+
   require Logger
 
   alias TwitterTop.{Requester, Aggregate, Parser, Store, DatesRange}
 
-  @service_url "https://twitter.com/"
-  @search_endpoint @service_url <> "search"
-
   def start(account \\ "norimyxxxo") do
     Logger.info "Starting for account: #{account}"
 
-    Task.async(__MODULE__, :workflow, [account])
-    |> (fn {:ok, task} -> Task.await(task) end).()
+    workflow(account)
 
     Logger.info "Stopping for account: #{account}"
   end
 
   def workflow(account) do
     # TODO: one request worker, many processing workers
+    # OR:
+    # Agent for holding links [random get url]
+    # Agent for holding tweets ID
+    # Agent for holding ALL tweets and dump on every xxx tweets (holder)
+    # Profile -> get user's tweets count
     account
-    |> hold_account
+    |> get_account
     |> generate_urls
-    |> Enum.each(fn url ->
-        Task.start(fn ->
-          url
-          |> IO.inspect
-          |> get_tweets_from_url
-          |> aggregate_words
-          |> store_results
-        end)
+    |> Enum.map(fn url ->
+        url
+        |> get_tweets_from_url
+        |> aggregate_words
+        |> store_results
       end)
   end
 
-  defp hold_account(account) do
-    @service_url <> account |> Requester.get! |> Parser.extract_account
+  defp get_account(account) do
+    @service_url <> account
+    |> Requester.get!
+    |> Parser.extract_account
   end
 
   defp generate_urls(profile) do
@@ -53,8 +56,8 @@ defmodule TwitterTop do
     |> DatesRange.generate_dates
     |> Stream.map(fn d ->
          @search_endpoint <> "?l=&src=typd&q=" <>
-                             "from:#{profile.name}%20" <>
-                             "since:#{d.since}%20 until:#{d.until}"
+                             "from:#{profile.screen_name}%20" <>
+                             "since:#{d.since}%20until:#{d.until}"
        end)
   end
 

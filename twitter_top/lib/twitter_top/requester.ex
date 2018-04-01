@@ -1,4 +1,5 @@
 defmodule TwitterTop.Requester do
+  require Logger
 
   @user_agents [
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Ubuntu Chromium/62.0.3202.62 Chrome/62.0.3202.62 Safari/537.36",
@@ -19,21 +20,19 @@ defmodule TwitterTop.Requester do
   end
 
   def get(url) do
-    IO.puts "Going to GET: " <> url
+    Logger.info "Going to GET: " <> url
 
-    case HTTPoison.get(url, generate_headers()) do
-      {:ok, %HTTPoison.Response{status_code: code, body: body}} when code in 200..299 ->
-        {:ok, body}
-      {:error, %HTTPoison.Error{reason: reason}} ->
-        {:abort, reason}
+    case HTTPoison.get(url, generate_headers(), follow_redirect: true) do
+      {:ok, %HTTPoison.Response{status_code: code, body: body}} when code in 200..299 -> {:ok, body}
+      {:error, %HTTPoison.Error{reason: reason}} -> {:abort, reason}
     end
   end
 
   def get!(url) do
     case get(url) do
       {:ok, body} -> body
-      {:abort, reason} -> reason |> inspect |> (&(IO.puts &1)).()
-      _ -> IO.puts "All matched case catch ..."
+      {:abort, reason} -> reason |> inspect |> (&(Logger.error &1)).()
+      _ -> Logger.error "All matched case catch ..."
     end
   end
 
